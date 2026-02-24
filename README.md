@@ -148,7 +148,7 @@ alias claude-kimi='ANTHROPIC_BASE_URL="http://localhost:8082" ANTHROPIC_AUTH_TOK
 
 ---
 
-## Convenience Shell Aliases
+## Shell Aliases
 
 Add these to your `~/.zshrc` or `~/.bashrc` for effortless launching. Replace `/absolute/path/to/free-claude-code` with your actual clone path (e.g., `$HOME/dev/free-claude-code`).
 

@@ -22,24 +22,24 @@ Get **40 free requests/min** on NVIDIA NIM, access **hundreds of models** on Ope
 </div>
 
 <div align="center">
-  <img src="pic.png" alt="Free Claude Code in action" width="700">
+  <img src="s1.png" alt="Free Claude Code in action" width="700">
   <p><em>Claude Code running via NVIDIA NIM — completely free</em></p>
 </div>
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **Zero Cost** | 40 req/min free on NVIDIA NIM. Free models on OpenRouter. Fully local with LM Studio |
-| **Drop-in Replacement** | Set 2 env vars — no modifications to Claude Code CLI or VSCode extension needed |
-| **3 Providers** | NVIDIA NIM, OpenRouter (hundreds of models), LM Studio (local & offline) |
-| **Thinking Token Support** | Parses `<think>` tags and `reasoning_content` into native Claude thinking blocks |
-| **Heuristic Tool Parser** | Models outputting tool calls as text are auto-parsed into structured tool use |
-| **Request Optimization** | 5 categories of trivial API calls intercepted locally — saves quota and latency |
-| **Discord Bot** | Remote autonomous coding with tree-based threading, session persistence, and live progress (Telegram also supported) |
-| **Smart Rate Limiting** | Proactive rolling-window throttle + reactive 429 exponential backoff + optional concurrency cap across all providers |
-| **Subagent Control** | Task tool interception forces `run_in_background=False` — no runaway subagents |
-| **Extensible** | Clean `BaseProvider` and `MessagingPlatform` ABCs — add new providers or platforms easily |
+| Feature                    | Description                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Zero Cost**              | 40 req/min free on NVIDIA NIM. Free models on OpenRouter. Fully local with LM Studio                                 |
+| **Drop-in Replacement**    | Set 2 env vars — no modifications to Claude Code CLI or VSCode extension needed                                      |
+| **3 Providers**            | NVIDIA NIM, OpenRouter (hundreds of models), LM Studio (local & offline)                                             |
+| **Thinking Token Support** | Parses `<think>` tags and `reasoning_content` into native Claude thinking blocks                                     |
+| **Heuristic Tool Parser**  | Models outputting tool calls as text are auto-parsed into structured tool use                                        |
+| **Request Optimization**   | 5 categories of trivial API calls intercepted locally — saves quota and latency                                      |
+| **Discord Bot**            | Remote autonomous coding with tree-based threading, session persistence, and live progress (Telegram also supported) |
+| **Smart Rate Limiting**    | Proactive rolling-window throttle + reactive 429 exponential backoff + optional concurrency cap across all providers |
+| **Subagent Control**       | Task tool interception forces `run_in_background=False` — no runaway subagents                                       |
+| **Extensible**             | Clean `BaseProvider` and `MessagingPlatform` ABCs — add new providers or platforms easily                            |
 
 ## Quick Start
 
@@ -66,8 +66,9 @@ Choose your provider and edit `.env`:
 <summary><b>NVIDIA NIM</b> (recommended — 40 req/min free)</summary>
 
 ```dotenv
+PROVIDER_TYPE=nvidia_nim
 NVIDIA_NIM_API_KEY=nvapi-your-key-here
-MODEL=nvidia_nim/stepfun-ai/step-3.5-flash
+MODEL=stepfun-ai/step-3.5-flash
 ```
 
 </details>
@@ -76,8 +77,9 @@ MODEL=nvidia_nim/stepfun-ai/step-3.5-flash
 <summary><b>OpenRouter</b> (hundreds of models)</summary>
 
 ```dotenv
+PROVIDER_TYPE=open_router
 OPENROUTER_API_KEY=sk-or-your-key-here
-MODEL=open_router/stepfun/step-3.5-flash:free
+MODEL=stepfun/step-3.5-flash:free
 ```
 
 </details>
@@ -86,7 +88,8 @@ MODEL=open_router/stepfun/step-3.5-flash:free
 <summary><b>LM Studio</b> (fully local, no API key)</summary>
 
 ```dotenv
-MODEL=lmstudio/lmstudio-community/qwen2.5-7b-instruct
+PROVIDER_TYPE=lmstudio
+MODEL=lmstudio-community/qwen2.5-7b-instruct
 ```
 
 </details>
@@ -136,6 +139,64 @@ alias claude-kimi='ANTHROPIC_BASE_URL="http://localhost:8082" ANTHROPIC_AUTH_TOK
 ```
 
 </details>
+
+---
+
+## Convenience Shell Aliases
+
+Add these to your `~/.zshrc` or `~/.bashrc` for effortless launching. Replace `/absolute/path/to/free-claude-code` with your actual clone path (e.g., `$HOME/dev/free-claude-code`).
+
+### 1. Quick Model Picker (claude-pick)
+
+```bash
+alias claude-pick="/absolute/path/to/free-claude-code/claude-pick"
+```
+
+Reload your shell (`source ~/.zshrc`) then run `claude-pick` to select a model interactively and launch Claude.
+
+### 2. Auto-starting Server (clawd)
+
+The `clawd` function automatically starts the proxy server in the background (if not already running) and launches Claude Code with the correct environment:
+
+```bash
+clawd() {
+    local REPO="/absolute/path/to/free-claude-code"
+    local HOST="127.0.0.1"
+    local PORT="8082"
+
+    # Start proxy only if not already running
+    if ! lsof -iTCP:${PORT} -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+      (
+        cd "$REPO" || return 1
+        PYTHONPATH=src uv run uvicorn server:app --host "$HOST" --port "$PORT" \
+          >> "$REPO/.uvicorn.log" 2>&1 &
+      )
+      sleep 1
+    fi
+
+    ANTHROPIC_AUTH_TOKEN=freecc \
+    ANTHROPIC_BASE_URL="http://${HOST}:${PORT}" \
+    claude "$@"
+  }
+```
+
+Now run `clawd` from anywhere — it ensures the server is running and forwards all arguments to Claude.
+
+### Customize the Names
+
+Rename these aliases to whatever you prefer: `claude-free`, `fcc`, `nvidia-claude`, etc.
+
+```bash
+alias fcc="/absolute/path/to/free-claude-code/claude-pick"
+```
+
+```bash
+nvidia-claude() {
+    # same function body, different name
+}
+```
+
+---
 
 <details>
 <summary><b>VSCode Extension Setup</b></summary>
@@ -188,19 +249,19 @@ To switch back to Anthropic models, comment out the added block and reload exten
 
 ## Providers
 
-| Provider | Cost | Rate Limit | Models | Best For |
-|----------|------|------------|--------|----------|
-| **NVIDIA NIM** | Free | 40 req/min | Kimi K2, GLM5, Devstral, MiniMax | Daily driver — generous free tier |
-| **OpenRouter** | Free / Paid | Varies | 200+ (GPT-4o, Claude, Step, etc.) | Model variety, fallback options |
-| **LM Studio** | Free (local) | Unlimited | Any GGUF model | Privacy, offline use, no rate limits |
+| Provider       | Cost         | Rate Limit | Models                            | Best For                             |
+| -------------- | ------------ | ---------- | --------------------------------- | ------------------------------------ |
+| **NVIDIA NIM** | Free         | 40 req/min | Kimi K2, GLM5, Devstral, MiniMax  | Daily driver — generous free tier    |
+| **OpenRouter** | Free / Paid  | Varies     | 200+ (GPT-4o, Claude, Step, etc.) | Model variety, fallback options      |
+| **LM Studio**  | Free (local) | Unlimited  | Any GGUF model                    | Privacy, offline use, no rate limits |
 
-Switch providers by changing `MODEL` in `.env` — use the prefix format `provider/model/name`. Invalid prefix causes an error.
+Switch providers by changing `PROVIDER_TYPE` in `.env`:
 
-| Provider | MODEL prefix | API Key Variable | Base URL |
-|----------|--------------|------------------|----------|
-| NVIDIA NIM | `nvidia_nim/...` | `NVIDIA_NIM_API_KEY` | `integrate.api.nvidia.com/v1` |
-| OpenRouter | `open_router/...` | `OPENROUTER_API_KEY` | `openrouter.ai/api/v1` |
-| LM Studio | `lmstudio/...` | (none) | `localhost:1234/v1` |
+| Provider   | `PROVIDER_TYPE` | API Key Variable     | Base URL                      |
+| ---------- | --------------- | -------------------- | ----------------------------- |
+| NVIDIA NIM | `nvidia_nim`    | `NVIDIA_NIM_API_KEY` | `integrate.api.nvidia.com/v1` |
+| OpenRouter | `open_router`   | `OPENROUTER_API_KEY` | `openrouter.ai/api/v1`        |
+| LM Studio  | `lmstudio`      | (none)               | `localhost:1234/v1`           |
 
 OpenRouter gives access to hundreds of models (StepFun, OpenAI, Anthropic, etc.) through a single API. Set `MODEL` to any OpenRouter model ID.
 
@@ -213,6 +274,7 @@ LM Studio runs locally — start the server in LM Studio's Developer tab or via 
 Control Claude Code remotely from Discord. Send tasks, watch live progress, and manage multiple concurrent sessions. Discord is the default messaging platform; Telegram is also supported.
 
 **Capabilities:**
+
 - Tree-based message threading — reply to messages to fork conversations
 - Session persistence across server restarts
 - Live streaming of thinking tokens, tool calls, and results
@@ -272,12 +334,12 @@ uv sync --extra voice
 
 **Configuration:**
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VOICE_NOTE_ENABLED` | Enable voice note handling | `true` |
-| `WHISPER_MODEL` | Hugging Face model ID or short name (`tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3`, `large-v3-turbo`) | `base` |
-| `WHISPER_DEVICE` | `cpu` \| `cuda` | `cpu` |
-| `HF_TOKEN` | Hugging Face token for faster model downloads (optional; [create one](https://huggingface.co/settings/tokens)) | — |
+| Variable             | Description                                                                                                       | Default |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------- |
+| `VOICE_NOTE_ENABLED` | Enable voice note handling                                                                                        | `true`  |
+| `WHISPER_MODEL`      | Hugging Face model ID or short name (`tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3`, `large-v3-turbo`) | `base`  |
+| `WHISPER_DEVICE`     | `cpu` \| `cuda`                                                                                                   | `cpu`   |
+| `HF_TOKEN`           | Hugging Face token for faster model downloads (optional; [create one](https://huggingface.co/settings/tokens))    | —       |
 
 ---
 
@@ -289,6 +351,7 @@ uv sync --extra voice
 Full list in [`nvidia_nim_models.json`](nvidia_nim_models.json).
 
 Popular models:
+
 - `qwen/qwen3.5-397b-a17b`
 - `z-ai/glm5`
 - `stepfun-ai/step-3.5-flash`
@@ -298,6 +361,7 @@ Popular models:
 Browse: [build.nvidia.com](https://build.nvidia.com/explore/discover)
 
 Update model list:
+
 ```bash
 curl "https://integrate.api.nvidia.com/v1/models" > nvidia_nim_models.json
 ```
@@ -310,6 +374,7 @@ curl "https://integrate.api.nvidia.com/v1/models" > nvidia_nim_models.json
 Hundreds of models from StepFun, OpenAI, Anthropic, Google, and more.
 
 Popular models:
+
 - `stepfun/step-3.5-flash:free`
 - `deepseek/deepseek-r1-0528:free`
 - `openai/gpt-oss-120b:free`
@@ -326,6 +391,7 @@ Browse free models: [https://openrouter.ai/collections/free-models](https://open
 Run models locally with [LM Studio](https://lmstudio.ai). Load a model in the Chat or Developer tab, then set `MODEL` to its identifier.
 
 Examples (native tool-use support):
+
 - `lmstudio-community/qwen2.5-7b-instruct`
 - `lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF`
 - `bartowski/Ministral-8B-Instruct-2410-GGUF`
@@ -338,35 +404,36 @@ Browse: [model.lmstudio.ai](https://model.lmstudio.ai)
 
 ## Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MODEL` | Model to use (prefix format: `provider/model/name`; invalid prefix causes error) | `nvidia_nim/stepfun-ai/step-3.5-flash` |
-| `NVIDIA_NIM_API_KEY` | NVIDIA API key (NIM provider) | required |
-| `OPENROUTER_API_KEY` | OpenRouter API key (OpenRouter provider) | required |
-| `LM_STUDIO_BASE_URL` | LM Studio server URL | `http://localhost:1234/v1` |
-| `PROVIDER_RATE_LIMIT` | LLM API requests per window | `40` |
-| `PROVIDER_RATE_WINDOW` | Rate limit window (seconds) | `60` |
-| `PROVIDER_MAX_CONCURRENCY` | Max simultaneous open provider streams | `5` |
-| `HTTP_READ_TIMEOUT` | Read timeout for provider API requests (seconds) | `300` |
-| `HTTP_WRITE_TIMEOUT` | Write timeout for provider API requests (seconds) | `10` |
-| `HTTP_CONNECT_TIMEOUT` | Connect timeout for provider API requests (seconds) | `2` |
-| `FAST_PREFIX_DETECTION` | Enable fast prefix detection | `true` |
-| `ENABLE_NETWORK_PROBE_MOCK` | Enable network probe mock | `true` |
-| `ENABLE_TITLE_GENERATION_SKIP` | Skip title generation | `true` |
-| `ENABLE_SUGGESTION_MODE_SKIP` | Skip suggestion mode | `true` |
-| `ENABLE_FILEPATH_EXTRACTION_MOCK` | Enable filepath extraction mock | `true` |
-| `MESSAGING_PLATFORM` | Messaging platform: `discord` or `telegram` | `discord` |
-| `DISCORD_BOT_TOKEN` | Discord Bot Token | `""` |
-| `ALLOWED_DISCORD_CHANNELS` | Comma-separated channel IDs (empty = none allowed) | `""` |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | `""` |
-| `ALLOWED_TELEGRAM_USER_ID` | Allowed Telegram User ID | `""` |
-| `VOICE_NOTE_ENABLED` | Enable voice note handling | `true` |
-| `WHISPER_MODEL` | Local Whisper model size | `base` |
-| `WHISPER_DEVICE` | `cpu` \| `cuda` | `cpu` |
-| `MESSAGING_RATE_LIMIT` | Messaging messages per window | `1` |
-| `MESSAGING_RATE_WINDOW` | Messaging window (seconds) | `1` |
-| `CLAUDE_WORKSPACE` | Directory for agent workspace | `./agent_workspace` |
-| `ALLOWED_DIR` | Allowed directories for agent | `""` |
+| Variable                          | Description                                          | Default                     |
+| --------------------------------- | ---------------------------------------------------- | --------------------------- |
+| `PROVIDER_TYPE`                   | Provider: `nvidia_nim`, `open_router`, or `lmstudio` | `nvidia_nim`                |
+| `MODEL`                           | Model to use for all requests                        | `stepfun-ai/step-3.5-flash` |
+| `NVIDIA_NIM_API_KEY`              | NVIDIA API key (NIM provider)                        | required                    |
+| `OPENROUTER_API_KEY`              | OpenRouter API key (OpenRouter provider)             | required                    |
+| `LM_STUDIO_BASE_URL`              | LM Studio server URL                                 | `http://localhost:1234/v1`  |
+| `PROVIDER_RATE_LIMIT`             | LLM API requests per window                          | `40`                        |
+| `PROVIDER_RATE_WINDOW`            | Rate limit window (seconds)                          | `60`                        |
+| `PROVIDER_MAX_CONCURRENCY`        | Max simultaneous open provider streams               | `5`                         |
+| `HTTP_READ_TIMEOUT`               | Read timeout for provider API requests (seconds)     | `300`                       |
+| `HTTP_WRITE_TIMEOUT`              | Write timeout for provider API requests (seconds)    | `10`                        |
+| `HTTP_CONNECT_TIMEOUT`            | Connect timeout for provider API requests (seconds)  | `2`                         |
+| `FAST_PREFIX_DETECTION`           | Enable fast prefix detection                         | `true`                      |
+| `ENABLE_NETWORK_PROBE_MOCK`       | Enable network probe mock                            | `true`                      |
+| `ENABLE_TITLE_GENERATION_SKIP`    | Skip title generation                                | `true`                      |
+| `ENABLE_SUGGESTION_MODE_SKIP`     | Skip suggestion mode                                 | `true`                      |
+| `ENABLE_FILEPATH_EXTRACTION_MOCK` | Enable filepath extraction mock                      | `true`                      |
+| `MESSAGING_PLATFORM`              | Messaging platform: `discord` or `telegram`          | `discord`                   |
+| `DISCORD_BOT_TOKEN`               | Discord Bot Token                                    | `""`                        |
+| `ALLOWED_DISCORD_CHANNELS`        | Comma-separated channel IDs (empty = none allowed)   | `""`                        |
+| `TELEGRAM_BOT_TOKEN`              | Telegram Bot Token                                   | `""`                        |
+| `ALLOWED_TELEGRAM_USER_ID`        | Allowed Telegram User ID                             | `""`                        |
+| `VOICE_NOTE_ENABLED`              | Enable voice note handling                           | `true`                      |
+| `WHISPER_MODEL`                   | Local Whisper model size                             | `base`                      |
+| `WHISPER_DEVICE`                  | `cpu` \| `cuda`                                      | `cpu`                       |
+| `MESSAGING_RATE_LIMIT`            | Messaging messages per window                        | `1`                         |
+| `MESSAGING_RATE_WINDOW`           | Messaging window (seconds)                           | `1`                         |
+| `CLAUDE_WORKSPACE`                | Directory for agent workspace                        | `./agent_workspace`         |
+| `ALLOWED_DIR`                     | Allowed directories for agent                        | `""`                        |
 
 See [`.env.example`](.env.example) for all supported parameters.
 
@@ -397,8 +464,6 @@ uv run ruff check      # Code style checking
 uv run ty check        # Type checking
 uv run pytest          # Run tests
 ```
-
----
 
 ## Extending
 
@@ -435,7 +500,7 @@ class MyProvider(BaseProvider):
 Extend `MessagingPlatform` in `messaging/` to add Slack or other platforms:
 
 ```python
-from messaging.base import MessagingPlatform
+from messaging.platforms.base import MessagingPlatform
 
 class MyPlatform(MessagingPlatform):
     async def start(self):

@@ -24,6 +24,7 @@ Get **40 free requests/min** on NVIDIA NIM, access **hundreds of models** on Ope
 <div align="center">
   <img src="s2.png" alt="Free Claude Code in action" width="700">
   <p><em>Select models</em></p>
+  <br>
 </div>
 
 <div align="center">
